@@ -10,3 +10,6 @@ or:
 
 3. To install body-parser, run the following command in the terminal:   
 `npm install body-parser`
+
+4. Install the package, type the following command in your terminal (install it into the project directory!):  
+`npm install lodash`
