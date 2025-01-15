@@ -1,0 +1,13 @@
+{
+  "name": "flashcard_api",
+  "version": "1.0.0",
+  "description": "Running the following code in your terminal will generate a new “package.json” file with information about the current directory:",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}
