@@ -1,40 +1,55 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
 const express = require('express');
+const app = express();
 
-http.createServer((req, res) => {
-    const address = req.url;
-    const query = new URL(address, 'http://' + req.headers.host); // Construct URL
-    let filePath = '';
-
-    // Log the request
-    const logEntry = `URL: ${address}\nTimestamp: ${new Date().toString()}\n\n`;
-    fs.appendFile('log.txt', logEntry, (error) => {
-        if (error) {
-            console.error('Error writing to log:', error);
-        } else {
-            console.log('Added to log.');
-        }
-    });
-
-    // Determine the file to serve
-    if (query.pathname.includes('documentation')) {
-        filePath = path.join(__dirname, 'documentation.html');
-    } else {
-        filePath = path.join(__dirname, 'index.html');
+let users = [
+    {
+        username: 'tester',
+        email: 'test@flashcard.com'
     }
+]
 
-    // Serve the file
-    fs.readFile(filePath, (err, data) => {
-        if (err) {
-            res.writeHead(404, { 'Content-Type': 'text/plain' });
-            res.end('404 Not Found');
-        } else {
-            res.writeHead(200, { 'Content-Type': 'text/html' });
-            res.end(data);
-        }
-    });
-}).listen(8000, () => {
-    console.log('Flashcard test server is running on port 8000.');
+let classes = [
+    {
+        name: 'Biology',
+        userId: 'testerId',
+    }
+    
+];
+
+let flashcards = [
+    {
+        question: 'What is photosynthesis?',
+        answer: 'The process by which plants convert light energy into chemical energy.',
+        image: 'https://www.sciencewithme.com/img/photosynthesis_11.jpg',
+        class_id: '',
+        user_id: 'testerId',
+    }
+];
+
+// GET requests
+// pp.METHOD(PATH, HANDLER) => METHOD refers to http methods(GET, POST, PUT, PATCH, DELETE)
+app.get('/', (req, res) => {
+    res.send("This is the flashcard app.");
+})
+
+app.get('/documentation', (req, res) => {
+    res.sendFile('public/documentation.html', { root: __dirname});
+});
+
+app.get('/users', (req, res) => {
+    res.json(users);
+});
+
+app.get('/classes', (req, res) => {
+    res.json(classes);
+});
+
+app.get('/flashcards', (req, res) => {
+    res.json(flashcards);
+});
+
+
+// Listening for requests
+app.listen(8080, () => {
+    console.log('Flashcard App is listening on port 8080.');
 });
