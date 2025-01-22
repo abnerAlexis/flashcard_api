@@ -1,6 +1,16 @@
-const express = require('express');
-const morgan = require('morgan')
+const express = require('express'),
+morgan = require('morgan'),
+fs = require('fs'),
+path = require('path');
+
 const app = express();
+
+//creating a write stream(in append mode)
+// `log.txt` file is created in the root dir
+const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {flags: 'a'})
+
+//setup the logger
+app.use(morgan('common', {stream: accessLogStream}));
 
 let users = [
     {
@@ -22,16 +32,8 @@ let flashcards = [
         answer: 'The process by which plants convert light energy into chemical energy.',
         image: 'https://www.sciencewithme.com/img/photosynthesis_11.jpg',
         class_id: '',
-        user_id: 'testerId',
     }
 ];
-
-  app.use(morgan('common'));
-
-  app.get('/secreturl', (req, res) => {
-    res.send(`<h1>This is the URL.</h1>`);
-  
-  });
 
 app.get('/', (req, res) => {
     res.send(`
