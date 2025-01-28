@@ -19,7 +19,7 @@ let users = [
     }
 ];
 
-let classes = [
+let courses = [
     {
         name: 'Biology',
         userId: 'testerId',
@@ -31,7 +31,7 @@ let flashcards = [
         question: 'What is photosynthesis?',
         answer: 'The process by which plants convert light energy into chemical energy.',
         image: 'https://www.sciencewithme.com/img/photosynthesis_11.jpg',
-        class_id: '',
+        course_id: '',
     }
 ];
 
@@ -71,8 +71,8 @@ app.get('/users', (req, res) => {
     res.json(users);
 });
 
-app.get('/classes', (req, res) => {
-    res.json(classes);
+app.get('/courses', (req, res) => {
+    res.json(courses);
 });
 
 app.get('/flashcards', (req, res) => {
@@ -84,3 +84,8 @@ app.get('/flashcards', (req, res) => {
 app.listen(3000, () => {
     console.log('Flashcard App is listening on port 3000.');
 });
+
+app.use((error, req, res, next) => {
+    console.log(`Error: ${error.stack}`);
+    res.status(500).send("Something broke.")
+})
