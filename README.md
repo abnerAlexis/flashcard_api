@@ -20,6 +20,28 @@ or:
 6. Install morgan, type the following command in your terminal (install it into the project directory!):  
 `npm install morgan`
 
+7. Install nodemon, type the following command in your terminal (install it into the project directory!):  
+`npm install nodemon --save-dev`  
+Nodemon watches for any changes made to your project files.  
+Whenever a change is detected, Nodemon automatically restarts your Node.js application.  
+This eliminates the need to manually stop and restart your server after every code modification, significantly speeding up your development cycle. (`node filename.js`)  
+You can focus on coding without interruptions, as Nodemon handles the restarts seamlessly. (`npm run dev)
+
+
+
+### START PROJECT
+node index.js  
+or  
+npm run dev (To use this; update your package.json as follows;  
+```
+    "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  },
+```
+)
+
 NOTE: 
 
 `npm install` command generates a new “node_modules” folder containing all the corresponding package folders.
