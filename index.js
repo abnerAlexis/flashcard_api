@@ -15,14 +15,7 @@ app.use(morgan('common', {stream: accessLogStream}));
 let users = [
     {
         username: 'tester',
-        email: 'test@flashcard.com'
-    }
-];
-
-let courses = [
-    {
-        name: 'Biology',
-        userId: 'testerId',
+        email: 'test@flashcard.com',
     }
 ];
 
@@ -32,7 +25,13 @@ let flashcards = [
         answer: 'The process by which plants convert light energy into chemical energy.',
         image: 'https://www.sciencewithme.com/img/photosynthesis_11.jpg',
         course_id: '',
-    }
+    },
+    {
+        "question": "What is mitosis?",
+        "answer": "Mitosis is the process by which a cell divides its nucleus and contents into two identical daughter cells.",
+        "image": "https://upload.wikimedia.org/wikipedia/commons/7/79/Mitosis_Stages.svg",
+        "course_id": "BIO101"
+      }
 ];
 
 app.get('/', (req, res) => {

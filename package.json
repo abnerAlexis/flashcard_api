@@ -2,10 +2,11 @@
   "name": "flashcard_api",
   "version": "1.0.0",
   "description": "Running the following code in your terminal will generate a new “package.json” file with information about the current directory:",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node index.js"
+    "start": "node index.js",
+    "dev": "nodemon server.js"
   },
   "keywords": [],
   "author": "Alexis Abner",
@@ -18,6 +19,7 @@
   },
   "devDependencies": {
     "eslint": "^9.18.0",
-    "express": "^4.21.2"
+    "express": "^4.21.2",
+    "nodemon": "^3.1.9"
   }
 }

@@ -48,3 +48,6 @@
 ::1 - - [28/Jan/2025:18:48:12 +0000] "GET /documentation HTTP/1.1" 200 1216
 ::1 - - [28/Jan/2025:18:53:00 +0000] "GET /documentation HTTP/1.1" 200 1539
 ::1 - - [28/Jan/2025:18:56:02 +0000] "GET /documentation HTTP/1.1" 200 1574
+::1 - - [29/Jan/2025:00:51:37 +0000] "GET /documentation HTTP/1.1" 200 1845
+::1 - - [29/Jan/2025:00:55:19 +0000] "GET /flashcards HTTP/1.1" 200 203
+::1 - - [29/Jan/2025:01:04:13 +0000] "GET /flashcards HTTP/1.1" 200 455
