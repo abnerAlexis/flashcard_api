@@ -1,19 +1,15 @@
 const express = require('express'),
-morgan = require('morgan'),
-fs = require('fs'),
-bodyParser = require('body-parser'),
-uuid = require('uuid'),
-path = require('path');
+    morgan = require('morgan'),
+    fs = require('fs'),
+    path = require('path'),
+    { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = 3000;
 
-//creating a write stream(in append mode)
-// `log.txt` file is created in the root dir
-const accessLogStream = fs.createWriteStream(path.join(__dirname, 'log.txt'), {flags: 'a'})
-
-//setup the logger
-app.use(morgan('common', {stream: accessLogStream}));
+// Middleware
+app.use(express.json());
+app.use(morgan('common', { stream: fs.createWriteStream(path.join(__dirname, 'log.txt'), { flags: 'a' }) }));
 
 let users = [
     {
@@ -90,19 +86,31 @@ app.get('/documentation', (req, res) => {
     res.sendFile('public/documentation.html', { root: __dirname});
 });
 
-// Get list of users
+//  √   Get list of users
 app.get('/users', (req, res) => {
     res.json(users);
 });
 
-// Get user by name
+//  √   Get user by name
 app.get('/users/:username', (req, res) => {
     res.json(users.find((user) => {
         return user.username === req.params.username
     }))
 });
 
-// Get courses by userId
+//Get user by userId
+app.get('/users/:id', (req, res) => {
+    const userId = req.params.id.toString();
+    const user = users.find(user => user._id.toString() === userId);
+
+    if (user) {
+        res.json(user); 
+    } else {
+        res.status(404).json({ message: 'User not found' }); 
+    }
+});
+
+//  √ Get courses by userId
 app.get('/courses/:userid', (req, res) => {
     const userCoursnames = courses.filter((course) => course.userId === req.params.userid);
     res.json(userCoursnames)
@@ -114,15 +122,84 @@ app.get('/flashcards/:courseid', (req, res) => {
 });
 
 //POST REQUESTS
-app.post('/users', (req, res) => {
-    let newUser = req.body;
-    if(!newUser.username) {
-        const message = 'Username is missing in your request.';
-        res.status(400).send(message);
-    } else {
-        newUser._id = uuid.v4()
+//  √   Add new user
+app.post("/users", (req, res) => {
+    try {
+        const newUser = req.body;
+
+        if (!newUser.username) {
+            return res.status(400).json({ message: "Username is missing in your request." });
+        }
+
+        newUser._id = uuidv4();
+        users.push(newUser);
+        
+        res.status(201).json(newUser);
+    } catch (error) {
+        console.error("Error adding user:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+//  Add new course using userid
+app.post("/courses/:userid", (req, res) => {
+    try {
+        const { userid } = req.params; // Extract userId from the request URL
+        const { courseName } = req.body; // Extract courseName from request body
+
+        // Validate if courseName is provided
+        if (!courseName) {
+            return res.status(400).json({ message: "Course name is missing in your request." });
+        }
+
+        // Check if the user exists before adding the course
+        const userExists = users.some(user => user._id === userid);
+        if (!userExists) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Create a new course
+        const newCourse = {
+            _id: uuidv4(), // Generate a unique ID
+            userId: userid, // Assign user ID from params
+            courseName
+        };
+
+        // Add to courses array
+        courses.push(newCourse);
+
+        // Respond with the newly created course
+        res.status(201).json(newCourse);
+    } catch (error) {
+        console.error("Error adding the new course:", error);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+});
+
+//  PUT REQUESTS
+
+app.put('/users/:username', (req, res) => {
+    let user = users.find(user => {
+        return user.username === req.params.username
+    });
+
+    if (user) {
+        user.email(req.params.classs)
     }
 })
+
+//  √   DELETE REQUESTS
+app.delete("/users/:id", (req, res) => {
+    const userId = req.params.id.toString();
+    const userIndex = users.findIndex(user => user._id === userId);
+
+    if (userIndex !== -1) {
+        users.splice(userIndex, 1); //Removing user from the array
+        res.status(200).json({message: `User ${userId} was deleted.`});
+    } else {
+        res.status(404).json({message: "User not found."});
+    }
+});
 
 // Listening for requests
 app.listen(PORT, () => {
@@ -133,3 +210,5 @@ app.use((error, req, res, next) => {
     console.log(`Error: ${error.stack}`);
     res.status(500).send("Something broke.")
 })
+
+//GET USER BY ID AND DELETE FUNCTIONS ARE TO DOS
