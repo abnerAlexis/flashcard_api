@@ -4,6 +4,9 @@ const express = require('express'),
     path = require('path'),
     { v4: uuidv4 } = require('uuid');
 
+const mongoose = require('mongoose');
+const Models = require('./models.js');
+
 const app = express();
 const PORT = 3000;
 
@@ -11,48 +14,9 @@ const PORT = 3000;
 app.use(express.json());
 app.use(morgan('common', { stream: fs.createWriteStream(path.join(__dirname, 'log.txt'), { flags: 'a' }) }));
 
-let users = [
-    {
-        _id: '01',
-        username: 'tester',
-        email: 'test@flashcard.com',
-        password: 'tttttttt',
-    },
-    {
-        _id: '02',
-        username: 'betty',
-        email: 'betty@flashcard.com',
-        password: 'bbbbbbbb',
-    }
-];
-
-let courses = [
-    {
-        _id: '1',
-        userId: '01',
-        courseName: 'Biology',
-    },
-    {
-        _id: '2',
-        userId: '02',
-        courseName: 'Chemistry',
-    },
-    {
-        _id: '3',
-        userId: '01',
-        courseName: 'Physics',
-    },
-];
-
-let flashcards = [
-    {
-        _id: '0001',
-        course_id: '1',
-        question: 'What is photosynthesis?',
-        answer: 'The process by which plants convert light energy into chemical energy.',
-        image: 'https://www.sciencewithme.com/img/photosynthesis_11.jpg',
-    }
-];
+mongoose.connect('mongodb://localhost:27017/flashcardDB')
+    .then(() => console.log("Connected to MongoDB"))
+    .catch(err => console.error("MongoDB connection error:", err));
 
 app.get('/', (req, res) => {
     res.send(`
@@ -83,33 +47,65 @@ app.get('/', (req, res) => {
 })
 
 app.get('/documentation', (req, res) => {
-    res.sendFile('public/documentation.html', { root: __dirname});
+    res.sendFile('public/documentation.html', { root: __dirname });
 });
+
+const Users = Models.User;
+const Courses = Models.Course;
+const FlashCards = Models.Flashcard;
 
 //  √   Get list of users
-app.get('/users', (req, res) => {
-    res.json(users);
-});
+app.get(
+    "/users",
+    async (req, res) => {
+        await Users.find()
+            .then(users => {
+                res.status(200).json(users);
+            })
+            .catch(error => {
+                console.error(error);
+                res.status(500).send("Error: " + error);
+            });
+    });
 
-//  √   Get user by name
-app.get('/users/:username', (req, res) => {
-    res.json(users.find((user) => {
-        return user.username === req.params.username
-    }))
-});
+//  Get user by userId
+app.get('/users/id/:id', async (req, res) => {
+    try {
+        const userId = req.params.id;
 
-//Get user by userId
-app.get('/users/:id', (req, res) => {
-    const userId = req.params.id.toString();
-    const user = users.find(user => user._id.toString() === userId);
+        // Convert the string ID to an ObjectId
+        let objectId;
+        try {
+            objectId = new mongoose.Types.ObjectId(userId);
+        } catch (error) {
+            return res.status(400).json({ error: 'Invalid user ID format' }); // Handle invalid ObjectId strings
+        }
 
-    if (user) {
-        res.json(user); 
-    } else {
-        res.status(404).json({ message: 'User not found' }); 
+        const user = await Users.findOne({ _id: objectId }); // Use the ObjectId in the query
+
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+        res.json(user);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 
+//  √   Get user by name
+app.get('/users/username/:username', async (req, res) => {
+    await Users.findOne({ username: req.params.username })
+        .then(user => {
+            res.json(user);
+        })
+        .catch(error => {
+            console.error(error);
+            res.status(500).send("Error: " + error);
+        })
+});
+/**
+ * TODOS
+ */
 //  √ Get courses by userId
 app.get('/courses/:userid', (req, res) => {
     const userCoursnames = courses.filter((course) => course.userId === req.params.userid);
@@ -133,7 +129,7 @@ app.post("/users", (req, res) => {
 
         newUser._id = uuidv4();
         users.push(newUser);
-        
+
         res.status(201).json(newUser);
     } catch (error) {
         console.error("Error adding user:", error);
@@ -195,9 +191,9 @@ app.delete("/users/:id", (req, res) => {
 
     if (userIndex !== -1) {
         users.splice(userIndex, 1); //Removing user from the array
-        res.status(200).json({message: `User ${userId} was deleted.`});
+        res.status(200).json({ message: `User ${userId} was deleted.` });
     } else {
-        res.status(404).json({message: "User not found."});
+        res.status(404).json({ message: "User not found." });
     }
 });
 
