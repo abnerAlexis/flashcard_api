@@ -7,8 +7,8 @@ let userSchema = mongoose.Schema({
 });
 
 let courseSchema = mongoose.Schema({
-    userId: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}, 
-    courseName: {type: String, required: true},
+    userid: {type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true}, 
+    name: {type: String, required: true},
 });
 
 let flashcardSchema = mongoose.Schema({

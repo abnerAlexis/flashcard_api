@@ -98,6 +98,7 @@ app.get('/courses/:userid', async (req, res) => {
     }
 });
 
+//  √   Get a flashcards by  course id
 app.get('/flashcards/:courseid', async (req, res) => {
     const courseId = req.params.courseid;
     try {
@@ -120,14 +121,14 @@ app.post("/users", async (req, res) => {
    try {
     const existingUser = await Users.findOne({username: req.body.username});
     if (existingUser) {
-        return status(400).send(req.body.username + 'alredy exist.');
+        return res.status(400).send(req.body.username + 'alredy exist.');
     }
     const newUser = await Users.create({
         username: req.body.username,
         email: req.body.email,
         password: req.body.password,
     });
-    res.status(201).json(newUser).send(username + ' Welcome to flashcard app.');
+    res.status(201).json(newUser);
    } catch(error) {
     console.error("Error creating user:", error);
     res.status(500).json({error: error.message});
@@ -137,38 +138,22 @@ app.post("/users", async (req, res) => {
 //============================TO DO=============================================
 
 //  Add new course using userid
-app.post("/courses/:userid", (req, res) => {
+app.post("/courses/:userid", async(req, res) => {
     try {
-        const { userid } = req.params; // Extract userId from the request URL
-        const { courseName } = req.body; // Extract courseName from request body
-
-        // Validate if courseName is provided
-        if (!courseName) {
-            return res.status(400).json({ message: "Course name is missing in your request." });
+        const objectId = new mongoose.Types.ObjectId(req.params.userid);
+        const existingCourse = await Courses.findOne({userid: objectId});
+        if (existingCourse) {
+            return res.status(400).send(req.params.userid + ' already exists.');
         }
-
-        // Check if the user exists before adding the course
-        const userExists = users.some(user => user._id === userid);
-        if (!userExists) {
-            return res.status(404).json({ message: "User not found." });
-        }
-
-        // Create a new course
-        const newCourse = {
-            _id: uuidv4(), // Generate a unique ID
-            userId: userid, // Assign user ID from params
-            courseName
-        };
-
-        // Add to courses array
-        courses.push(newCourse);
-
-        // Respond with the newly created course
+        const newCourse = await Courses.create({
+            userid: objectId,
+            name: req.body.name,
+        })
         res.status(201).json(newCourse);
-    } catch (error) {
-        console.error("Error adding the new course:", error);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
+    } catch(error) {
+        console.error("Error creating course:", error);
+        res.status(500).json({error: error.message});
+       }
 });
 
 //  PUT REQUESTS
