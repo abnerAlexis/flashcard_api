@@ -19,34 +19,10 @@ mongoose.connect('mongodb://localhost:27017/flashcardDB')
     .catch(err => console.error("MongoDB connection error:", err));
 
 app.get('/', (req, res) => {
-    res.send(`
-        <html>
-          <head>
-            <link rel="icon" type="image/png" href="./reddaisy.png" />
-            <style>
-              body {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                background-color:rgb(102, 6, 6);
-              }
-              h1 {
-                font-family: Arial, sans-serif;
-                text-align: center;
-                color: #fff; /* text color */
-              }
-            </style>
-          </head>
-          <body>
-            <h1>This is the flashcard API.</h1>
-          </body>
-        </html>
-      `);
-})
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
 
-app.get('/documentation', (req, res) => {
+app.get('/doc', (req, res) => {
     res.sendFile('public/documentation.html', { root: __dirname });
 });
 
@@ -103,39 +79,62 @@ app.get('/users/username/:username', async (req, res) => {
             res.status(500).send("Error: " + error);
         })
 });
-/**
- * TODOS
- */
-//  √ Get courses by userId
-app.get('/courses/:userid', (req, res) => {
-    const userCoursnames = courses.filter((course) => course.userId === req.params.userid);
-    res.json(userCoursnames)
+
+//  √   Get a users courses by userid
+app.get('/courses/:userid', async (req, res) => {
+    const userId = req.params.userid;
+
+    try {
+        //  Convert userId from string to objectid
+        const objectId = new mongoose.Types.ObjectId(userId);
+        userCourses = await Courses.find({ userid: objectId });
+        if (userCourses.length === 0) {
+            return res.status(404).json({ error: "No courses found for this user." });
+        }
+        res.json(userCourses);
+    } catch (error) {
+        console.error("Database query error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
-app.get('/flashcards/:courseid', (req, res) => {
-    const courseFlashcards = flashcards.filter((flashcard) => flashcard.course_id == req.params.courseid);
-    res.json(courseFlashcards);
+app.get('/flashcards/:courseid', async (req, res) => {
+    const courseId = req.params.courseid;
+    try {
+        const objectId = new mongoose.Types.ObjectId(courseId);
+        courseFlashcards = await FlashCards.find({ course_id: objectId });
+        if (courseFlashcards.length === 0) {
+            return res.status(404).json({ error: "No flashcards found for this course." });
+        }
+        res.json(courseFlashcards);
+    } catch (error) {
+        console.error("Database query error:", error);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
 });
 
 //POST REQUESTS
+
 //  √   Add new user
-app.post("/users", (req, res) => {
-    try {
-        const newUser = req.body;
-
-        if (!newUser.username) {
-            return res.status(400).json({ message: "Username is missing in your request." });
-        }
-
-        newUser._id = uuidv4();
-        users.push(newUser);
-
-        res.status(201).json(newUser);
-    } catch (error) {
-        console.error("Error adding user:", error);
-        res.status(500).json({ message: "Internal Server Error" });
+app.post("/users", async (req, res) => {
+   try {
+    const existingUser = await Users.findOne({username: req.body.username});
+    if (existingUser) {
+        return status(400).send(req.body.username + 'alredy exist.');
     }
+    const newUser = await Users.create({
+        username: req.body.username,
+        email: req.body.email,
+        password: req.body.password,
+    });
+    res.status(201).json(newUser).send(username + ' Welcome to flashcard app.');
+   } catch(error) {
+    console.error("Error creating user:", error);
+    res.status(500).json({error: error.message});
+   }
 });
+
+//============================TO DO=============================================
 
 //  Add new course using userid
 app.post("/courses/:userid", (req, res) => {
