@@ -12,6 +12,7 @@ const PORT = 3000;
 
 // Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(morgan('common', { stream: fs.createWriteStream(path.join(__dirname, 'log.txt'), { flags: 'a' }) }));
 
 mongoose.connect('mongodb://localhost:27017/flashcardDB')
@@ -43,6 +44,34 @@ app.get(
                 res.status(500).send("Error: " + error);
             });
     });
+
+    //  √   Get list of courses
+    app.get(
+        "/courses",
+        async (req, res) => {
+            await Courses.find()
+                .then(courses => {
+                    res.status(200).json(courses);
+                })
+                .catch(error => {
+                    console.error(error);
+                    res.status(500).send("Error: " + error);
+                });
+        });
+
+        //  √   Get list of flashcards
+    app.get(
+        "/flashcards",
+        async (req, res) => {
+            await FlashCards.find()
+                .then(flashcards => {
+                    res.status(200).json(flashcards);
+                })
+                .catch(error => {
+                    console.error(error);
+                    res.status(500).send("Error: " + error);
+                });
+        });
 
 //  Get user by userId
 app.get('/users/id/:id', async (req, res) => {
@@ -135,8 +164,6 @@ app.post("/users", async (req, res) => {
    }
 });
 
-//============================TO DO=============================================
-
 //  Add new course using userid
 app.post("/courses/:userid", async(req, res) => {
     try {
@@ -156,6 +183,26 @@ app.post("/courses/:userid", async(req, res) => {
        }
 });
 
+//============================TO DO=============================================
+//  Add new flashcard
+app.post('/flashcards/:courseid', async(req, res) => {
+    // console.log("Request Body:", req.body); // Debugging output
+    try {
+        const objectid = new mongoose.Types.ObjectId(req.params.courseid);
+        
+        const newFlashcard = await FlashCards.create({
+            course_id: objectid,
+            question: req.body.question,
+            answer: req.body.answer,
+            imageURL: req.body.imageURL,
+        });
+        // console.log("Created Flashcard:", newFlashcard); // Log created object
+        res.status(201).json(newFlashcard);
+    } catch (error) {
+        console.error("Error creating course:", error);
+        res.status(500).json({error: error.message});
+    }
+})
 //  PUT REQUESTS
 
 app.put('/users/:username', (req, res) => {

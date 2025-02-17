@@ -12,10 +12,10 @@ let courseSchema = mongoose.Schema({
 });
 
 let flashcardSchema = mongoose.Schema({
-    courseId: {type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true}, 
-    question: {type:String, required: true},
-    answer: {type:String, required: true},
-    imageURL: {type:String}
+    course_id: {type: mongoose.Schema.Types.ObjectId, ref: 'Course', required: true}, 
+    question: { type: String, required: true, trim: true, minlength: 3, maxlength: 500 },
+    answer: { type: String, required: true, trim: true, minlength: 1, maxlength: 1000 },
+    imageURL: { type: String, trim: true},
 })
 
 let User = mongoose.model('User', userSchema);
