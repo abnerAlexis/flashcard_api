@@ -206,18 +206,9 @@ app.post('/flashcards/:courseid', async (req, res) => {
 //============================TO DO=============================================
 //  PUT REQUESTS
 
-app.put('/users/:username', (req, res) => {
-    let user = users.find(user => {
-        return user.username === req.params.username
-    });
-
-    if (user) {
-        user.email(req.params.classs)
-    }
-})
 
 //  √   DELETE REQUESTS
-        //Delet user account along with all associating courses and flashcards
+        //Delete user account along with all associating courses and flashcards
 //Function to delete all courses associating user to be deleted
 const deleteCourses = async (userId) => {
     const courses = await Courses.find({ userid: userId });
@@ -253,6 +244,40 @@ app.delete('/users/:userid', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 })
+
+// Delete a  flashcard by its associated course id
+app.delete('/flashcards/:courseid', async (req, res) => {
+    try {
+        const objectId = new mongoose.Types.ObjectId(req.params.courseid);
+        const flashcard = await FlashCards.findOneAndDelete({ course_id: objectId });
+
+        if (!flashcard) {
+            return res.status(404).json({ error: 'Flashcard not found.' });
+        }
+
+        res.status(200).json({ message: 'Flashcard was removed.' });
+    } catch (error) {
+        console.error("Error deleting flashcard:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Delete a flashcard by its ID ==== Admin
+app.delete('/flashcards/del/:id', async (req, res) => {
+    try {
+        const objectId = new mongoose.Types.ObjectId(req.params.id);
+        const flashcard = await FlashCards.findOneAndDelete({ _id: objectId });
+
+        if (!flashcard) {
+            return res.status(404).json({ error: 'Flashcard not found.' });
+        }
+
+        res.status(200).json({ message: 'Flashcard was removed.' });
+    } catch (error) {
+        console.error("Error deleting flashcard:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 
