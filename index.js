@@ -45,33 +45,33 @@ app.get(
             });
     });
 
-    //  √   Get list of courses
-    app.get(
-        "/courses",
-        async (req, res) => {
-            await Courses.find()
-                .then(courses => {
-                    res.status(200).json(courses);
-                })
-                .catch(error => {
-                    console.error(error);
-                    res.status(500).send("Error: " + error);
-                });
-        });
+//  √   Get list of courses
+app.get(
+    "/courses",
+    async (req, res) => {
+        await Courses.find()
+            .then(courses => {
+                res.status(200).json(courses);
+            })
+            .catch(error => {
+                console.error(error);
+                res.status(500).send("Error: " + error);
+            });
+    });
 
-        //  √   Get list of flashcards
-    app.get(
-        "/flashcards",
-        async (req, res) => {
-            await FlashCards.find()
-                .then(flashcards => {
-                    res.status(200).json(flashcards);
-                })
-                .catch(error => {
-                    console.error(error);
-                    res.status(500).send("Error: " + error);
-                });
-        });
+//  √   Get list of flashcards
+app.get(
+    "/flashcards",
+    async (req, res) => {
+        await FlashCards.find()
+            .then(flashcards => {
+                res.status(200).json(flashcards);
+            })
+            .catch(error => {
+                console.error(error);
+                res.status(500).send("Error: " + error);
+            });
+    });
 
 //  Get user by userId
 app.get('/users/id/:id', async (req, res) => {
@@ -147,28 +147,28 @@ app.get('/flashcards/:courseid', async (req, res) => {
 
 //  √   Add new user
 app.post("/users", async (req, res) => {
-   try {
-    const existingUser = await Users.findOne({username: req.body.username});
-    if (existingUser) {
-        return res.status(400).send(req.body.username + 'alredy exist.');
+    try {
+        const existingUser = await Users.findOne({ username: req.body.username });
+        if (existingUser) {
+            return res.status(400).send(req.body.username + 'alredy exist.');
+        }
+        const newUser = await Users.create({
+            username: req.body.username,
+            email: req.body.email,
+            password: req.body.password,
+        });
+        res.status(201).json(newUser);
+    } catch (error) {
+        console.error("Error creating user:", error);
+        res.status(500).json({ error: error.message });
     }
-    const newUser = await Users.create({
-        username: req.body.username,
-        email: req.body.email,
-        password: req.body.password,
-    });
-    res.status(201).json(newUser);
-   } catch(error) {
-    console.error("Error creating user:", error);
-    res.status(500).json({error: error.message});
-   }
 });
 
 //  Add new course using userid
-app.post("/courses/:userid", async(req, res) => {
+app.post("/courses/:userid", async (req, res) => {
     try {
         const objectId = new mongoose.Types.ObjectId(req.params.userid);
-        const existingCourse = await Courses.findOne({userid: objectId});
+        const existingCourse = await Courses.findOne({ userid: objectId });
         if (existingCourse) {
             return res.status(400).send(req.params.userid + ' already exists.');
         }
@@ -177,19 +177,18 @@ app.post("/courses/:userid", async(req, res) => {
             name: req.body.name,
         })
         res.status(201).json(newCourse);
-    } catch(error) {
+    } catch (error) {
         console.error("Error creating course:", error);
-        res.status(500).json({error: error.message});
-       }
+        res.status(500).json({ error: error.message });
+    }
 });
 
-//============================TO DO=============================================
 //  Add new flashcard
-app.post('/flashcards/:courseid', async(req, res) => {
+app.post('/flashcards/:courseid', async (req, res) => {
     // console.log("Request Body:", req.body); // Debugging output
     try {
         const objectid = new mongoose.Types.ObjectId(req.params.courseid);
-        
+
         const newFlashcard = await FlashCards.create({
             course_id: objectid,
             question: req.body.question,
@@ -200,9 +199,11 @@ app.post('/flashcards/:courseid', async(req, res) => {
         res.status(201).json(newFlashcard);
     } catch (error) {
         console.error("Error creating course:", error);
-        res.status(500).json({error: error.message});
+        res.status(500).json({ error: error.message });
     }
 })
+
+//============================TO DO=============================================
 //  PUT REQUESTS
 
 app.put('/users/:username', (req, res) => {
@@ -216,17 +217,44 @@ app.put('/users/:username', (req, res) => {
 })
 
 //  √   DELETE REQUESTS
-app.delete("/users/:id", (req, res) => {
-    const userId = req.params.id.toString();
-    const userIndex = users.findIndex(user => user._id === userId);
+        //Delet user account along with all associating courses and flashcards
+//Function to delete all courses associating user to be deleted
+const deleteCourses = async (userId) => {
+    const courses = await Courses.find({ userid: userId });
+    const courseIds = courses.map(course => course._id);
 
-    if (userIndex !== -1) {
-        users.splice(userIndex, 1); //Removing user from the array
-        res.status(200).json({ message: `User ${userId} was deleted.` });
-    } else {
-        res.status(404).json({ message: "User not found." });
+    //delete flashcards of courses & and courses of user to be deleted
+    await deleteCourseFlashcards(courseIds);
+    //delete courses
+    await Courses.deleteMany({ userid: userId });
+}
+//Function to delete flashcards of a course to be deleted
+const deleteCourseFlashcards = async (courseIds) => {
+    await FlashCards.deleteMany({ course_id: { $in: courseIds } });
+};
+
+app.delete('/users/:userid', async (req, res) => {
+    try {
+        const userId = req.params.userid.toString();
+        //checking user's existence in the db
+        const user = await Users.findById(userId);
+        if (!user) {
+            return req.status(404).json({ message: 'User not found.' });
+        }
+        //Deleting users flashcards of their courses by a method call
+        await deleteCourses(userId);
+
+        //Delete user
+        await Users.findByIdAndDelete(userId);
+
+        res.status(200).json({ message: `Your user account, along its courses, and associated flashcards were deleted.` });
+    } catch (error) {
+        console.error("Error deleting user, courses, and flashcards:", error);
+        res.status(500).json({ error: error.message });
     }
-});
+})
+
+
 
 // Listening for requests
 app.listen(PORT, () => {
