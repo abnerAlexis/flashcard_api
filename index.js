@@ -6,7 +6,9 @@ const express = require('express'),
 
 const mongoose = require('mongoose');
 const Models = require('./models.js');
-
+const { error } = require('console');
+const { check, validationResult } = require("express-validator");
+const { min } = require('lodash');
 const app = express();
 const PORT = 3000;
 
@@ -40,8 +42,7 @@ app.get(
                 res.status(200).json(users);
             })
             .catch(error => {
-                console.error(error);
-                res.status(500).send("Error: " + error);
+                handleError(res, error, "Failed while getting users");
             });
     });
 
@@ -54,8 +55,7 @@ app.get(
                 res.status(200).json(courses);
             })
             .catch(error => {
-                console.error(error);
-                res.status(500).send("Error: " + error);
+                handleError(res, error, "Failed while getting courses");
             });
     });
 
@@ -68,8 +68,7 @@ app.get(
                 res.status(200).json(flashcards);
             })
             .catch(error => {
-                console.error(error);
-                res.status(500).send("Error: " + error);
+                handleError(res, error, "Failed while getting flashcards");
             });
     });
 
@@ -93,7 +92,7 @@ app.get('/users/id/:id', async (req, res) => {
         }
         res.json(user);
     } catch (error) {
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed while getting user");
     }
 });
 
@@ -104,8 +103,7 @@ app.get('/users/username/:username', async (req, res) => {
             res.json(user);
         })
         .catch(error => {
-            console.error(error);
-            res.status(500).send("Error: " + error);
+            handleError(res, error, "Failed while getting user");
         })
 });
 
@@ -122,12 +120,11 @@ app.get('/courses/:userid', async (req, res) => {
         }
         res.json(userCourses);
     } catch (error) {
-        console.error("Database query error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        handleError(res, error, "Failed while getting user");
     }
 });
 
-//  √   Get a flashcards by  course id
+//  √   Get a flashcard by  course id
 app.get('/flashcards/:courseid', async (req, res) => {
     const courseId = req.params.courseid;
     try {
@@ -138,8 +135,7 @@ app.get('/flashcards/:courseid', async (req, res) => {
         }
         res.json(courseFlashcards);
     } catch (error) {
-        console.error("Database query error:", error);
-        res.status(500).json({ error: "Internal Server Error" });
+        handleError(res, error, "Failed while getting flashcard");
     }
 });
 
@@ -159,8 +155,7 @@ app.post("/users", async (req, res) => {
         });
         res.status(201).json(newUser);
     } catch (error) {
-        console.error("Error creating user:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed while creating user");
     }
 });
 
@@ -178,8 +173,7 @@ app.post("/courses/:userid", async (req, res) => {
         })
         res.status(201).json(newCourse);
     } catch (error) {
-        console.error("Error creating course:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed while creating course");
     }
 });
 
@@ -198,17 +192,107 @@ app.post('/flashcards/:courseid', async (req, res) => {
         // console.log("Created Flashcard:", newFlashcard); // Log created object
         res.status(201).json(newFlashcard);
     } catch (error) {
-        console.error("Error creating course:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed while creating flashcard");
     }
 })
 
-//============================TO DO=============================================
 //  PUT REQUESTS
+// Update user info
 
+app.put('/users/:username', [
+    check("username", "Username should be at least 5 characters.").isLength({ min: 5 }),
+    check("email", "Invalid email format.").isEmail(),
+    check("password", "Password should be at least 8 characters.").isLength({ min: 8 })
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const updatedUser = await Users.findOneAndUpdate(
+            { username: req.params.username },
+            {
+                $set: {
+                    username: req.body.username,
+                    email: req.body.email,
+                    password: req.body.password
+                }
+            },
+            { new: true, runValidators: true } // Ensures validators run during update
+        );
+
+        if (!updatedUser) {
+            return res.status(404).json({ error: "User not found." });
+        }
+        res.json(updatedUser);
+    } catch (error) {
+        handleError(res, error, "Failed to update user");
+    }
+});
+
+// Update coursename
+app.put('/courses/:courseid', [
+    check("name", "Course name should be a string with max 20 characters.").isLength({ max: 20, min: 3 }),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const updatedCourseName = await Courses.findOneAndUpdate(
+            { _id: req.params.courseid },
+            {
+                $set: {
+                    name: req.body.name,
+                }
+            },
+            { new: true, runValidators: true }
+        );
+        if (!updatedCourseName) {
+            return res.status(404).json({ message: "Course not found." });
+        }
+        res.json(updatedCourseName);
+    } catch (error) {
+        handleError(res, error, "Failed to updating course name");
+    }
+})
+// Update flashcard
+app.put('/flashcards/:cardid', [
+    check("question", "Question should be maximum 500 characters.").isLength({ min: 1, max: 500 }),
+    check("answer", "Answer should be maximum 1000 characters.").isLength({ min: 1, max: 1000 }),
+    check("imageURL", "imageURL should be a valid URL.").isString(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+    }
+
+    try {
+        const updatedFlashcard = await FlashCards.findOneAndUpdate(
+            { _id: req.params.cardid },
+            {
+                $set: {
+                    question: req.body.question,
+                    answer: req.body.answer,
+                    imageURL: req.body.imageURL,
+                }
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!updatedFlashcard) {
+            return res.status(404).json({ error: "Flashcard not found." });
+        }
+        res.json(updatedFlashcard)
+    } catch (error) {
+        handleError(res, error, "Failed to update user");
+    }
+})
 
 //  √   DELETE REQUESTS
-        //Delete user account along with all associating courses and flashcards
+//Delete user account along with all associating courses and flashcards
 //Function to delete all courses associating user to be deleted
 const deleteCourses = async (userId) => {
     const courses = await Courses.find({ userid: userId });
@@ -240,8 +324,7 @@ app.delete('/users/:userid', async (req, res) => {
 
         res.status(200).json({ message: `Your user account, along its courses, and associated flashcards were deleted.` });
     } catch (error) {
-        console.error("Error deleting user, courses, and flashcards:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed deleting user");
     }
 })
 
@@ -257,8 +340,7 @@ app.delete('/flashcards/:courseid', async (req, res) => {
 
         res.status(200).json({ message: 'Flashcard was removed.' });
     } catch (error) {
-        console.error("Error deleting flashcard:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed deleting flashcard");
     }
 });
 
@@ -274,12 +356,29 @@ app.delete('/flashcards/del/:id', async (req, res) => {
 
         res.status(200).json({ message: 'Flashcard was removed.' });
     } catch (error) {
-        console.error("Error deleting flashcard:", error);
-        res.status(500).json({ error: error.message });
+        handleError(res, error, "Failed deleting flashcard");
     }
 });
 
+// Delete a course by its ID ==== Admin
+app.delete('/courses/:courseid', async (req, res) => {
+    try {
+        const objectId = req.params.courseid;
+        const course = await Courses.findByIdAndDelete({ _id: objectId })
 
+        if (!course) {
+            return res.status(404).json({ error: 'Course not found.' });
+        }
+        res.status(200).json({ message: 'Course was removed.' });
+    } catch (error) {
+        handleError(res, error, "Failed deleting course");
+    }
+})
+
+const handleError = (res, req, message = "Internal server error") => {
+    console.error("Database query error:", error);
+    res.status(500).json({ message, error: error.message || error });
+}
 
 // Listening for requests
 app.listen(PORT, () => {
@@ -290,5 +389,3 @@ app.use((error, req, res, next) => {
     console.log(`Error: ${error.stack}`);
     res.status(500).send("Something broke.")
 })
-
-//GET USER BY ID AND DELETE FUNCTIONS ARE TO DOS
