@@ -30,9 +30,9 @@ You can focus on coding without interruptions, as Nodemon handles the restarts s
 
 
 ### START PROJECT
-node index.js  
+`node index.js ` 
 or  
-npm run dev (To use this; update your package.json as follows;  
+`npm run dev` (To use this; update your package.json as follows;  
 ```
     "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

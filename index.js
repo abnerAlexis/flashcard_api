@@ -21,10 +21,12 @@ mongoose.connect('mongodb://localhost:27017/flashcardDB')
     .then(() => console.log("Connected to MongoDB"))
     .catch(err => console.error("MongoDB connection error:", err));
 
+// Home page
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Documentation
 app.get('/doc', (req, res) => {
     res.sendFile('public/documentation.html', { root: __dirname });
 });
